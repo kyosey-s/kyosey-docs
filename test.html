@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smoother Fluid Flower Head</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from '../three.js-local/three.module.min.js';
+
+    // Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+
+    // Flower Head Group
+    const flowerHead = new THREE.Group();
+
+    // Fluid Stones (Dynamic Geometry)
+    const stoneCount = 10; // Number of stones
+    const stones = [];
+    for (let i = 0; i < stoneCount; i++) {
+      const geometry = new THREE.SphereGeometry(Math.random() * 0.5 + 0.5, 32, 32); // Base sphere
+      const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.2 }); // Neutral material
+      const stone = new THREE.Mesh(geometry, material);
+
+      // Position stones in a circular pattern
+      const angle = (i / stoneCount) * Math.PI * 2;
+      stone.position.set(
+        Math.cos(angle) * 2,
+        0,
+        Math.sin(angle) * 2
+      );
+
+      stones.push({ mesh: stone, speed: Math.random() * 0.2 + 0.2 }); // Slower speeds
+      flowerHead.add(stone);
+    }
+
+    // Add flower head to scene
+    scene.add(flowerHead);
+
+    // Dynamic Texture (Gradient with Red, Blue, Pink)
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const texture = new THREE.CanvasTexture(canvas);
+
+    function drawDynamicTexture(time) {
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, "rgb(227, 25, 53)"); // Red
+      gradient.addColorStop(0.5, "rgb(23, 41, 172)"); // Blue
+      gradient.addColorStop(1, "rgb(255, 105, 180)"); // Pink
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      texture.needsUpdate = true; // Update the texture
+    }
+
+    // Dynamic Geometry and Motion
+    function updateStones(time) {
+      stones.forEach(({ mesh, speed }, index) => {
+        const geometry = mesh.geometry;
+
+        // Dynamically displace vertices for smooth fluid motion
+        const position = geometry.attributes.position;
+        for (let i = 0; i < position.count; i++) {
+          const x = position.getX(i);
+          const y = position.getY(i);
+          const z = position.getZ(i);
+
+          // Use slower sine-based deformation
+          const offset = Math.sin(time * speed + x * 2 + y * 2 + z * 2) * 0.5; 
+          position.setXYZ(i, x + offset, y + offset, z + offset);
+        }
+
+        position.needsUpdate = true; // Notify Three.js of geometry change
+
+        // Apply slower scaling and rotation
+        const scale = Math.sin(time * speed + index) * 0.2 + 1.2; // Slower scaling
+        mesh.scale.set(scale, scale, scale);
+        mesh.rotation.y += speed * 0.005; // Slow rotation
+        mesh.rotation.x += speed * 0.002;
+
+        // Apply dynamic gradient texture
+        mesh.material.map = texture;
+        mesh.material.needsUpdate = true;
+      });
+    }
+
+    // Camera Position
+    camera.position.set(0, 5, 12);
+    camera.lookAt(0, 0, 0);
+
+    // Animation Loop
+    function animate() {
+      const time = performance.now() / 1000;
+
+      drawDynamicTexture(time); // Update gradient texture
+      updateStones(time); // Update stones dynamically
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

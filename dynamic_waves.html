@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glossy Red and White Objects</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from '../three.js-local/three.module.min.js';
+
+    // Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Fixed Black Background
+    scene.background = new THREE.Color(0xffffff); // Black
+
+    // Environment Map for Reflections
+    const cubeTextureLoader = new THREE.CubeTextureLoader();
+    const environmentMap = cubeTextureLoader.load([
+      'https://threejs.org/examples/textures/cube/skybox/px.jpg',
+      'https://threejs.org/examples/textures/cube/skybox/nx.jpg',
+      'https://threejs.org/examples/textures/cube/skybox/py.jpg',
+      'https://threejs.org/examples/textures/cube/skybox/ny.jpg',
+      'https://threejs.org/examples/textures/cube/skybox/pz.jpg',
+      'https://threejs.org/examples/textures/cube/skybox/nz.jpg',
+    ]);
+    scene.environment = environmentMap;
+
+    // Add Spheres and Cubes
+    const objects = [];
+    const objectCount = 20; // Number of objects
+    const colors = [
+      new THREE.Color(0xe31935), // Red
+      new THREE.Color(0x1729ac), // Blue
+    ];
+
+    for (let i = 0; i < objectCount; i++) {
+      const isSphere = i % 2 === 0; // Alternate between sphere and cube
+      const geometry = isSphere
+        ? new THREE.SphereGeometry(Math.random() * 0.5 + 0.5, 32, 32)
+        : new THREE.BoxGeometry(Math.random() * 1 + 0.5, Math.random() * 1 + 0.5, Math.random() * 1 + 0.5);
+
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[i % 2], // Alternate between red and white
+        roughness: 0.05, // Very low roughness for high gloss
+        metalness: 1.0, // High metalness for a shiny look
+        envMap: environmentMap, // Add environment reflections
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.position.set(
+        (Math.random() - 0.5) * 15, // Random x
+        (Math.random() - 0.5) * 15, // Random y
+        (Math.random() - 0.5) * 15  // Random z
+      );
+
+      scene.add(mesh);
+      objects.push({
+        mesh,
+        direction: new THREE.Vector3(
+          (Math.random() - 0.5) * 0.5, // Faster initial speed
+          (Math.random() - 0.5) * 0.5,
+          (Math.random() - 0.5) * 0.5
+        ),
+        speed: Math.random() * 0.2 + 0.1, // Dynamic speed multiplier
+      });
+    }
+
+    // Animate Objects (Position and Size Change)
+    function animateObjects() {
+      objects.forEach(({ mesh, direction, speed }) => {
+        // Move the objects
+        mesh.position.addScaledVector(direction, speed);
+
+        // Bounce off walls and randomly change direction
+        ['x', 'y', 'z'].forEach((axis) => {
+          if (Math.abs(mesh.position[axis]) > 10) {
+            direction[axis] *= -1; // Reverse direction
+            direction[axis] += (Math.random() - 0.5) * 0.2; // Add randomness to direction
+          }
+        });
+
+        // Randomly change size over time
+        const scaleFactor = Math.sin(performance.now() / 500) * 0.5 + 1;
+        mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+      });
+    }
+
+    // Lighting: Enhance Brightness and Reflection
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Bright ambient light
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0xffffff, 2, 50); // Intense point light
+    pointLight1.position.set(10, 10, 10);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0xffffff, 2, 50);
+    pointLight2.position.set(-10, -10, -10);
+    scene.add(pointLight2);
+
+    // Camera Animation
+    let cameraAngle = 0;
+    function animateCamera() {
+      cameraAngle += 0.01;
+      camera.position.x = Math.sin(cameraAngle) * 20;
+      camera.position.z = Math.cos(cameraAngle) * 20;
+      camera.lookAt(0, 0, 0); // Keep looking at the center
+    }
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      animateObjects(); // Update object positions and sizes
+      animateCamera(); // Update camera position
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
