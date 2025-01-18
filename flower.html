@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abstract Geometric Shapes</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from './three.js-local/three.module.min.js';
+
+    // Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Background Color
+    scene.background = new THREE.Color(0xf5f5f5); // Light grey background
+    camera.position.set(0, 10, 25);
+
+    // Array to Store Shapes
+    const shapes = [];
+
+    // Function to Create a Custom Shape
+    function createCustomShape(color) {
+      const geometry = new THREE.DodecahedronGeometry(Math.random() * 1.5 + 0.5); // Random-sized dodecahedron
+      const material = new THREE.MeshBasicMaterial({
+        color: color,
+        flatShading: true,
+      });
+
+      const shape = new THREE.Mesh(geometry, material);
+      return shape;
+    }
+
+    // Create and Add Shapes
+    const shapeColors = [0xff6347, 0xffd700, 0x87ceeb, 0x98fb98, 0xee82ee]; // Red, Yellow, Blue, Green, Violet
+    for (let i = 0; i < 20; i++) {
+      const color = shapeColors[Math.floor(Math.random() * shapeColors.length)];
+      const shape = createCustomShape(color);
+      shape.position.set(
+        (Math.random() - 0.5) * 20, // Random x
+        (Math.random() - 0.5) * 20, // Random y
+        (Math.random() - 0.5) * 5   // Random z
+      );
+      shape.scale.set(
+        Math.random() * 1.5 + 0.5, // Random scale x
+        Math.random() * 1.5 + 0.5, // Random scale y
+        Math.random() * 1.5 + 0.5  // Random scale z
+      );
+      scene.add(shape);
+      shapes.push(shape);
+    }
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Rotate the camera in multiple directions
+      const time = Date.now() * 0.0005;
+      camera.position.x = Math.sin(time) * 25;
+      camera.position.y = Math.cos(time) * 15; // Up and down rotation
+      camera.position.z = Math.cos(time) * 25;
+      camera.lookAt(0, 0, 0); // Always look at the center of the scene
+
+      // Animate shapes (scaling up and down)
+      shapes.forEach((shape, index) => {
+        const scale = Math.sin(time * 2 + index) * 0.5 + 1.5; // Oscillating scale
+        shape.scale.set(scale, scale, scale);
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
